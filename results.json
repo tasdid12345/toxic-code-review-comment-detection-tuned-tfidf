@@ -1,0 +1,43 @@
+{
+  "question": "Can a CV-tuned, class-weighted word+char TF-IDF linear model with a tuned threshold beat a standard word-TF-IDF logistic regression at detecting toxic code review comments when toxicity is rare?",
+  "method": "ToxiCR comments, toxic subsampled to ~10% prevalence, one stratified 80/20 split; improved model tuned with 5-fold CV on train only; test used once.",
+  "dataset": {
+    "name": "ToxiCR code review toxicity dataset (stand-in)",
+    "source_url": "https://github.com/WSU-SEAL/ToxiCR",
+    "n_rows": 11509,
+    "n_train": 9207,
+    "n_test": 2302,
+    "same_as_paper": false,
+    "baseline_is_papers_method": false
+  },
+  "metric_name": "toxic-class F1 (test)",
+  "higher_is_better": true,
+  "baseline": "Word 1-2gram TF-IDF + default logistic regression, threshold 0.5.",
+  "improved": "Word+char_wb TF-IDF, class-weighted LR with CV-tuned C / word n-gram range / decision threshold, optionally blended with LightGBM (blend weight CV-tuned).",
+  "metrics": {
+    "baseline_f1": 0.23754789272030652,
+    "improved_f1": 0.7306138569726528,
+    "baseline_f1_std": 0.0,
+    "improved_f1_std": 0.004834586247378759,
+    "baseline_pr_auc": 0.6597018125274506,
+    "improved_pr_auc": 0.8134174046519907,
+    "baseline_pr_auc_std": 0.0,
+    "improved_pr_auc_std": 0.0010452120322963843,
+    "baseline_recall": 0.13478260869565217,
+    "improved_recall": 0.7173913043478262,
+    "baseline_recall_std": 0.0,
+    "improved_recall_std": 0.007099970268936753,
+    "baseline_score": 0.23754789272030652,
+    "improved_score": 0.7306138569726528,
+    "baseline_score_std": 0.0,
+    "improved_score_std": 0.004834586247378759,
+    "improvement": 0.4930659642523463,
+    "selected_C": 8.0,
+    "selected_word_ngram_max": 2.0,
+    "blend_weight_lgbm": 0.7,
+    "tuned_threshold": 0.21999999999999997,
+    "cv_f1_improved_train": 0.7327293318233296,
+    "test_toxic_prevalence": 0.0999131190269331
+  },
+  "notes": "Stand-in dataset, not the ToxiShield paper's data; baseline is a generic stand-in, not ToxiShield. Single split; seed std reflects only model randomness (baseline LR is deterministic, LightGBM varies). Subsampling changes prevalence vs the original data. Rows with missing text or label are dropped before use. Dataset URL discovered at run time from the repo; exact file used: https://raw.githubusercontent.com/WSU-SEAL/ToxiCR/master/models/code-review-dataset-full.xlsx"
+}
