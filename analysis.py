@@ -66,10 +66,17 @@ def parse(df):
     l = next((cols[k] for k in ("is_toxic", "toxic", "label", "y") if k in cols), None)
     if t is None or l is None:
         sys.exit(f"cannot identify columns in {list(df.columns)}")
-    lab = df[l]
-    y = lab.astype(str).str.strip().str.lower().isin(["1", "1.0", "true", "toxic", "yes"]) if lab.dtype == object else lab.astype(float) > 0
-    out = pd.DataFrame({"text": df[t].astype(str), "y": y.astype(int)})
-    return out[out.text.str.strip() != ""].drop_duplicates("text").reset_index(drop=True)
+    sub = df[[t, l]].dropna().reset_index(drop=True)  # drop rows with missing text or label
+    lab = sub[l]
+    if pd.api.types.is_bool_dtype(lab) or pd.api.types.is_numeric_dtype(lab):
+        y = lab.astype(float) > 0
+    else:
+        y = lab.astype(str).str.strip().str.lower().isin(["1", "1.0", "true", "toxic", "yes"])
+    text = pd.Series([str(x) for x in sub[t].tolist()], dtype=object)
+    out = pd.DataFrame({"text": text, "y": y.astype(int).values})
+    out = out[out.text.str.strip() != ""]
+    out = out[out.text.str.lower() != "nan"]
+    return out.drop_duplicates("text").reset_index(drop=True)
 
 
 def evaluate(y, p, thr):
@@ -109,7 +116,7 @@ n_pos = min(len(pos), int(round(len(neg) / 9)))
 n_neg = min(len(neg), 9 * n_pos)
 d = pd.concat([pos.sample(n_pos, random_state=SEED), neg.sample(n_neg, random_state=SEED)]).reset_index(drop=True)
 Xt, Xe, yt, ye = train_test_split(d.text, d.y.values, test_size=0.2, stratify=d.y.values, random_state=SEED)
-Xt, Xe = Xt.tolist(), Xe.tolist()
+Xt, Xe = [str(x) for x in Xt.tolist()], [str(x) for x in Xe.tolist()]
 print(f"rows {len(d)} (clean {n_raw}), prevalence {d.y.mean():.3f}, train {len(Xt)}, test {len(Xe)}")
 
 # ---- baseline: word 1-2gram TF-IDF + default LR, threshold 0.5 ----
@@ -189,6 +196,7 @@ res = {
     "metrics": M,
     "notes": "Stand-in dataset, not the ToxiShield paper's data; baseline is a generic stand-in, not ToxiShield. Single split; "
              "seed std reflects only model randomness (baseline LR is deterministic, LightGBM varies). Subsampling changes prevalence vs the original data. "
+             "Rows with missing text or label are dropped before use. "
              "Dataset URL discovered at run time from the repo; exact file used: " + url,
 }
 with open("results.json", "w", encoding="utf-8") as f:
